@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\deps\\glew",
+    "\\deps\\glew\\bin",
+    "\\deps\\glew\\bin\\Release",
+    "\\deps\\glew\\bin\\Release\\x64",
+    "\\deps\\glew\\lib",
+    "\\deps\\glew\\lib\\Release",
+    "\\deps\\glew\\lib\\Release\\x64"
+  ],
+  "SelectedNode": "\\deps",
+  "PreviewInSolutionExplorer": false
+}
