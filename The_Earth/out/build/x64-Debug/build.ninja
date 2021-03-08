@@ -72,6 +72,43 @@ build The_Earth.exe: CXX_EXECUTABLE_LINKER__The_Earth_Debug CMakeFiles\The_Earth
   TARGET_IMPLIB = The_Earth.lib
   TARGET_PDB = The_Earth.pdb
 
+# =============================================================================
+# Object build statements for EXECUTABLE target Vetores
+
+
+#############################################
+# Order-only phony target for Vetores
+
+build cmake_object_order_depends_target_Vetores: phony || CMakeFiles\Vetores.dir
+
+build CMakeFiles\Vetores.dir\Vetores.cpp.obj: CXX_COMPILER__Vetores_Debug ..\..\..\Vetores.cpp || cmake_object_order_depends_target_Vetores
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  INCLUDES = -I..\..\..\deps\glm
+  OBJECT_DIR = CMakeFiles\Vetores.dir
+  OBJECT_FILE_DIR = CMakeFiles\Vetores.dir
+  TARGET_COMPILE_PDB = CMakeFiles\Vetores.dir\
+  TARGET_PDB = Vetores.pdb
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target Vetores
+
+
+#############################################
+# Link the executable Vetores.exe
+
+build Vetores.exe: CXX_EXECUTABLE_LINKER__Vetores_Debug CMakeFiles\Vetores.dir\Vetores.cpp.obj
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
+  LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  OBJECT_DIR = CMakeFiles\Vetores.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = CMakeFiles\Vetores.dir\
+  TARGET_FILE = Vetores.exe
+  TARGET_IMPLIB = Vetores.lib
+  TARGET_PDB = Vetores.pdb
+
 
 #############################################
 # Utility command for edit_cache
@@ -100,6 +137,8 @@ build rebuild_cache: phony CMakeFiles\rebuild_cache.util
 
 build The_Earth: phony The_Earth.exe
 
+build Vetores: phony Vetores.exe
+
 # =============================================================================
 # Folder targets.
 
@@ -108,7 +147,7 @@ build The_Earth: phony The_Earth.exe
 #############################################
 # Folder: C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug
 
-build all: phony The_Earth.exe
+build all: phony The_Earth.exe Vetores.exe
 
 # =============================================================================
 # Built-in targets

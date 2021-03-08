@@ -6,10 +6,13 @@ cmake_minimum_required (VERSION 3.19)
 project ("The_Earth")
 
 # Adicione a origem ao executável deste projeto.
-add_executable (The_Earth "The_Earth.cpp" )
+add_executable (The_Earth "The_Earth.cpp")
+add_executable (Vetores "Vetores.cpp")
 
 # TODO: Adicione testes e instale destinos, se necessário.
 target_include_directories(The_Earth PRIVATE deps/glm deps/stb deps/glfw/include deps/glew/include)
+
+target_include_directories(Vetores PRIVATE  deps/glm)
 
 target_link_directories(The_Earth PRIVATE deps/glfw/lib-vc2019 deps/glew/lib/Release/x64)
 
