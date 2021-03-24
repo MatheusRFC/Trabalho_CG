@@ -1,7 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\out",
+    "\\out\\build",
+    "\\shaders"
   ],
-  "SelectedNode": "\\The_Earth.cpp",
+  "SelectedNode": "\\CMakeLists.txt",
   "PreviewInSolutionExplorer": false
 }

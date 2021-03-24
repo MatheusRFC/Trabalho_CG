@@ -4,8 +4,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 
 using namespace std;
+using namespace glm;
 
 const int largura = 1280;
 const int altura = 720;
@@ -47,6 +49,32 @@ int main()
 		glm::vec3{ 1.0f, -1.0f, 0.0f}, 
 		glm::vec3{ 0.0f,  1.0f, 0.0f}
 	};
+
+	//Matriz Modelo
+	mat4 MatrizModelo = identity<mat4>();
+
+	//Matriz de Visão
+	vec3 Olho{ 0, 0, 10};
+	vec3 Centro{0, 0, 0};
+	vec3 Cima{ 0, 1, 0 };
+	mat4 MatrizVisao = lookAt(Olho, Centro, Cima);
+
+	//Matriz de Projeção
+	constexpr float FoV = radians(45.0f);
+	const float AspectRatio = largura / altura;
+	const float Near = 0.001f;
+	const float Far = 1000.0f;
+	mat4 MatrizProjecao = perspective(FoV, AspectRatio, Near, Far);
+
+	// Model View Projection - MVP
+	mat4 MVP = MatrizProjecao * MatrizVisao * MatrizModelo;
+
+	//Aplicando a MVP nos vertices do triangulo.
+	for (vec3& Vertice : Triangulo) {
+		vec4 VerticeProjetado = MVP * vec4{ Vertice, 1.0f };
+		VerticeProjetado /= VerticeProjetado.w;
+		Vertice = VerticeProjetado;
+	}
 
 	//Copiando os vértices do triangulo para a memória da GPU
 	GLuint Buffer_Vertices;

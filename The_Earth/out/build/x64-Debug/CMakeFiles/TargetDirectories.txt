@@ -1,4 +1,5 @@
 C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/CMakeFiles/The_Earth.dir
 C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/CMakeFiles/Vetores.dir
+C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/CMakeFiles/Matrizes.dir
 C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/CMakeFiles/edit_cache.dir
 C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir

@@ -65,7 +65,7 @@ build The_Earth.exe: CXX_EXECUTABLE_LINKER__The_Earth_Debug CMakeFiles\The_Earth
   LINK_LIBRARIES = glfw3.lib  glew32.lib  opengl32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
   LINK_PATH = -LIBPATH:C:\Users\Mathe\Documents\Trabalho_CG\The_Earth\deps\glfw\lib-vc2019   -LIBPATH:C:\Users\Mathe\Documents\Trabalho_CG\The_Earth\deps\glew\lib\Release\x64
   OBJECT_DIR = CMakeFiles\The_Earth.dir
-  POST_BUILD = cmd.exe /C "cd /D C:\Users\Mathe\Documents\Trabalho_CG\The_Earth\out\build\x64-Debug && "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E copy C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/deps/glew/bin/Release/x64/glew32.dll C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/glew32.dll"
+  POST_BUILD = cmd.exe /C "cd /D C:\Users\Mathe\Documents\Trabalho_CG\The_Earth\out\build\x64-Debug && "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E copy C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/deps/glew/bin/Release/x64/glew32.dll C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/glew32.dll && "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E create_symlink C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/shaders C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug/shaders"
   PRE_LINK = cd .
   TARGET_COMPILE_PDB = CMakeFiles\The_Earth.dir\
   TARGET_FILE = The_Earth.exe
@@ -109,6 +109,43 @@ build Vetores.exe: CXX_EXECUTABLE_LINKER__Vetores_Debug CMakeFiles\Vetores.dir\V
   TARGET_IMPLIB = Vetores.lib
   TARGET_PDB = Vetores.pdb
 
+# =============================================================================
+# Object build statements for EXECUTABLE target Matrizes
+
+
+#############################################
+# Order-only phony target for Matrizes
+
+build cmake_object_order_depends_target_Matrizes: phony || CMakeFiles\Matrizes.dir
+
+build CMakeFiles\Matrizes.dir\Matrizes.cpp.obj: CXX_COMPILER__Matrizes_Debug ..\..\..\Matrizes.cpp || cmake_object_order_depends_target_Matrizes
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  INCLUDES = -I..\..\..\deps\glm
+  OBJECT_DIR = CMakeFiles\Matrizes.dir
+  OBJECT_FILE_DIR = CMakeFiles\Matrizes.dir
+  TARGET_COMPILE_PDB = CMakeFiles\Matrizes.dir\
+  TARGET_PDB = Matrizes.pdb
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target Matrizes
+
+
+#############################################
+# Link the executable Matrizes.exe
+
+build Matrizes.exe: CXX_EXECUTABLE_LINKER__Matrizes_Debug CMakeFiles\Matrizes.dir\Matrizes.cpp.obj
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
+  LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  OBJECT_DIR = CMakeFiles\Matrizes.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = CMakeFiles\Matrizes.dir\
+  TARGET_FILE = Matrizes.exe
+  TARGET_IMPLIB = Matrizes.lib
+  TARGET_PDB = Matrizes.pdb
+
 
 #############################################
 # Utility command for edit_cache
@@ -135,6 +172,8 @@ build rebuild_cache: phony CMakeFiles\rebuild_cache.util
 # =============================================================================
 # Target aliases.
 
+build Matrizes: phony Matrizes.exe
+
 build The_Earth: phony The_Earth.exe
 
 build Vetores: phony Vetores.exe
@@ -147,7 +186,7 @@ build Vetores: phony Vetores.exe
 #############################################
 # Folder: C:/Users/Mathe/Documents/Trabalho_CG/The_Earth/out/build/x64-Debug
 
-build all: phony The_Earth.exe Vetores.exe
+build all: phony The_Earth.exe Vetores.exe Matrizes.exe
 
 # =============================================================================
 # Built-in targets
