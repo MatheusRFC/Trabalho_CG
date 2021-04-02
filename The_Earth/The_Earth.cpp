@@ -1,16 +1,122 @@
 ﻿#include <iostream>
 #include <locale.h>
 #include <array>
+#include <fstream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+#include <assert.h>
 
 using namespace std;
 using namespace glm;
 
 const int largura = 1280;
 const int altura = 720;
+
+string LerArquivo(const char* caminho) 
+{
+	string Conteudo_arquivo;
+	if (ifstream arquivo{ caminho, ios::in })
+	{
+		Conteudo_arquivo.assign(istreambuf_iterator<char>(arquivo), istreambuf_iterator<char>());
+	}
+	return Conteudo_arquivo;
+}
+
+
+//Função que verifica o shader. PS: ShaderID já deve estar compilado antes de ser passado pra função.
+void verificaShader(GLuint ShaderId)
+{
+	GLint resultado = GL_TRUE;
+	glGetShaderiv(ShaderId, GL_COMPILE_STATUS, &resultado);
+
+	//Verifica se houve algum erro na hora da compilação do shader.
+	if (resultado == GL_FALSE)
+	{
+		GLint Comprimento_log = 0;
+		glGetShaderiv(ShaderId, GL_INFO_LOG_LENGTH, &Comprimento_log);
+
+		if (Comprimento_log > 0) {
+			string Info_Log_Shader(Comprimento_log, '\0');
+			glGetShaderInfoLog(ShaderId, Comprimento_log, nullptr, &Info_Log_Shader[0]);
+
+			cout << "Erro no Shader" << endl;
+			cout << Info_Log_Shader << endl;
+
+			assert(false);
+		}
+	}
+}
+
+GLuint CarregaShaders(const char* VertexShaderFile, const char* FragmentShaderFile) 
+{
+	string FonteVertexShader = LerArquivo(VertexShaderFile);
+	string FonteFragmentShader = LerArquivo(FragmentShaderFile);
+
+	assert(!FonteVertexShader.empty());
+	assert(!FonteFragmentShader.empty());
+
+	//Criação dos identificadores dos arquivos.
+	GLuint VertexShaderId = glCreateShader(GL_VERTEX_SHADER);
+	GLuint FragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
+
+	//Verifica se a compilação do vertexshader deu certo.
+	cout << "Compilando " << VertexShaderFile << endl;
+	const char* FonteVertexShaderPtr = FonteVertexShader.c_str();
+	glShaderSource(VertexShaderId, 1, &FonteVertexShaderPtr, nullptr);
+	glCompileShader(VertexShaderId);
+	verificaShader(VertexShaderId);
+
+	//Verifica se a compilação do fragmentshader deu certo.
+	cout << "Compilando " << FragmentShaderFile << endl;
+	const char* FonteFragmentShaderPtr = FonteFragmentShader.c_str();
+	glShaderSource(FragmentShaderId, 1, &FonteFragmentShaderPtr, nullptr);
+	glCompileShader(FragmentShaderId);
+	verificaShader(FragmentShaderId);
+
+	cout << "Linkando o programa" << endl;
+	GLuint ProgramId = glCreateProgram();
+	glAttachShader(ProgramId, VertexShaderId);
+	glAttachShader(ProgramId, FragmentShaderId);
+	glLinkProgram(ProgramId);
+
+	//Verifica a linkagem do programa
+	GLint Result = GL_TRUE;
+	glGetProgramiv(ProgramId, GL_LINK_STATUS, &Result);
+
+	if (Result == GL_FALSE)
+	{
+
+		GLint Tamanho_log = 0;
+		glGetProgramiv(ProgramId, GL_INFO_LOG_LENGTH, &Tamanho_log);
+
+		if (Tamanho_log > 0) 
+		{
+			string info_log(Tamanho_log, '\0');
+			glGetProgramInfoLog(ProgramId, Tamanho_log, nullptr, &info_log[0]);
+
+			cout << "Erro na linkagem do programa" << endl;
+			cout << info_log << endl;
+		}
+
+		assert(false);
+	}
+
+	glDetachShader(ProgramId, VertexShaderId);
+	glDetachShader(ProgramId, FragmentShaderId);
+
+	glDeleteShader(VertexShaderId);
+	glDeleteShader(FragmentShaderId);
+
+	return ProgramId;
+}
+
+struct Vertex
+{
+	vec3 Posicao;
+	vec3 Cor;
+};
 
 int main()
 {
@@ -43,11 +149,14 @@ int main()
 	cout << "Versão do OpenGL: " << glGetString(GL_VERSION) << "\n";
 	cout << "Versão do GLSL: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
 
+	GLuint ProgramaId = CarregaShaders("shaders/triangulo_vert.glsl", "shaders/triangulo_frag.glsl");
+
+
 	//Definição do triango usando coordenadas normalizadas
-	array < glm::vec3, 3> Triangulo = {
-		glm::vec3{-1.0f, -1.0f, 0.0f},
-		glm::vec3{ 1.0f, -1.0f, 0.0f}, 
-		glm::vec3{ 0.0f,  1.0f, 0.0f}
+	array <Vertex, 3> Triangulo = {
+		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 0.0f, 0.0f}},
+		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}},
+		Vertex{vec3{ 0.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}}
 	};
 
 	//Matriz Modelo
@@ -69,13 +178,6 @@ int main()
 	// Model View Projection - MVP
 	mat4 MVP = MatrizProjecao * MatrizVisao * MatrizModelo;
 
-	//Aplicando a MVP nos vertices do triangulo.
-	for (vec3& Vertice : Triangulo) {
-		vec4 VerticeProjetado = MVP * vec4{ Vertice, 1.0f };
-		VerticeProjetado /= VerticeProjetado.w;
-		Vertice = VerticeProjetado;
-	}
-
 	//Copiando os vértices do triangulo para a memória da GPU
 	GLuint Buffer_Vertices;
 
@@ -89,26 +191,38 @@ int main()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Triangulo), Triangulo.data(), GL_STATIC_DRAW);
 
 	//Define a cor de fundo
-	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
 	// Loop de eventos da aplicação.
 	while (!glfwWindowShouldClose(janela)) {
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		//Ativa o programa de shader
+		glUseProgram(ProgramaId);
+
+		GLint ModelViewProjectionLock = glGetUniformLocation(ProgramaId, "ModelViewProjection");
+		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP));
+
 		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
 
 		//informa o opengl que o Buffer de Vertices vai ser o ativo no momento.
 		glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
 
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		//Reverter o estado que foi criado
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+
+		//Desabilita o programa ativo.
+		glUseProgram(0);
 
 		// Realiza os processamentos em fila do GLFW, e esses eventos podem consistir de teclas apertadas, interação com o mouse etc.
 		glfwPollEvents();
