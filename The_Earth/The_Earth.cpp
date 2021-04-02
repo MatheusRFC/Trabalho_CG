@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <assert.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 using namespace std;
 using namespace glm;
@@ -112,10 +114,49 @@ GLuint CarregaShaders(const char* VertexShaderFile, const char* FragmentShaderFi
 	return ProgramId;
 }
 
+GLuint CarregaTextura(const char* Arquivo_Textura)
+{
+	cout << "Carregando textura" << Arquivo_Textura << endl;
+	int Tamanho_textura = 0;
+	int Altura_textura = 0;
+	int Numero_compomentes = 0;
+	unsigned char* Dados_textura = stbi_load(Arquivo_Textura, &Tamanho_textura, &Altura_textura, &Numero_compomentes, 3);
+
+	assert(Dados_textura);
+
+	//Gera o identificador da textura
+	GLuint TextureId;
+	glGenTextures(1, &TextureId);
+
+	//Permite modificar a textura
+	glBindTexture(GL_TEXTURE_2D, TextureId);
+
+	//Copia a textura para a memoria de vídeo
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Tamanho_textura, Altura_textura, 0, GL_RGB, GL_UNSIGNED_BYTE, Dados_textura);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	//Configura o texture mapping
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//Gera o MIPMAP a partir da textura.
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	//Desabilita a textura depois de ela ser copiada para a GPU.
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_image_free(Dados_textura);
+
+	return TextureId;
+}
+
 struct Vertex
 {
 	vec3 Posicao;
 	vec3 Cor;
+	vec2 UV;
 };
 
 int main()
@@ -154,9 +195,9 @@ int main()
 
 	//Definição do triango usando coordenadas normalizadas
 	array <Vertex, 3> Triangulo = {
-		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 0.0f, 0.0f}},
-		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}},
-		Vertex{vec3{ 0.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}}
+		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 0.0f, 0.0f}, vec2{0.0f, 0.0f}},
+		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
+		Vertex{vec3{ 0.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.5f, 1.0f}}
 	};
 
 	//Matriz Modelo
@@ -206,6 +247,7 @@ int main()
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
 
 		//informa o opengl que o Buffer de Vertices vai ser o ativo no momento.
 		glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
@@ -213,6 +255,7 @@ int main()
 
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -220,6 +263,7 @@ int main()
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
 
 		//Desabilita o programa ativo.
 		glUseProgram(0);
