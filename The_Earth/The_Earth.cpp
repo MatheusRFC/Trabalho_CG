@@ -117,6 +117,9 @@ GLuint CarregaShaders(const char* VertexShaderFile, const char* FragmentShaderFi
 GLuint CarregaTextura(const char* Arquivo_Textura)
 {
 	cout << "Carregando textura" << Arquivo_Textura << endl;
+
+	stbi_set_flip_vertically_on_load(true);
+
 	int Tamanho_textura = 0;
 	int Altura_textura = 0;
 	int Numero_compomentes = 0;
@@ -192,6 +195,7 @@ int main()
 
 	GLuint ProgramaId = CarregaShaders("shaders/triangulo_vert.glsl", "shaders/triangulo_frag.glsl");
 
+	GLuint TextureId = CarregaTextura("texturas/earth_2k.jpg");
 
 	//Definição do triango usando coordenadas normalizadas
 	array <Vertex, 3> Triangulo = {
@@ -244,6 +248,12 @@ int main()
 
 		GLint ModelViewProjectionLock = glGetUniformLocation(ProgramaId, "ModelViewProjection");
 		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP));
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureId);
+
+		GLint TextureSamplerLock = glGetUniformLocation(ProgramaId, "amostraTextura");
+		glUniform1i(GL_TEXTURE_2D, TextureId);
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
