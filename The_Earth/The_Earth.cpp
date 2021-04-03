@@ -7,8 +7,11 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <assert.h>
+#include <glm/gtx/string_cast.hpp>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
 
 using namespace std;
 using namespace glm;
@@ -203,6 +206,45 @@ public:
 };
 
 FlyCamera Camera;
+bool HabilitaMovimentoMouse = false;
+vec2 CursorAnterior{ 0.0, 0.0 };
+
+void ClickMouse(GLFWwindow* janela, int botao, int acao, int modificadores)
+{
+	cout << "Botao: " << botao << " Acao: " << acao << " Modificadores: " << modificadores << endl;
+
+	if (botao == GLFW_MOUSE_BUTTON_LEFT)
+	{
+		if (acao == GLFW_PRESS)
+		{
+			glfwSetInputMode(janela, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+			double x, y;
+			glfwGetCursorPos(janela, &x, &y);
+			CursorAnterior = vec2{ x, y };
+
+			HabilitaMovimentoMouse = true;
+		}
+		if (acao == GLFW_RELEASE)
+		{
+			glfwSetInputMode(janela, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			HabilitaMovimentoMouse = false;
+		}
+	}
+}
+
+void MovimentoMouse(GLFWwindow* janela, double x, double y)
+{
+	if (HabilitaMovimentoMouse == true)
+	{
+		vec2 CursorAtual{ x, y };
+		vec2 Cursor_delta = CursorAtual - CursorAnterior;
+
+		cout << to_string(Cursor_delta) << endl;
+
+		CursorAnterior = CursorAtual;
+	}
+}
 
 int main()
 {
@@ -215,8 +257,18 @@ int main()
 
 	// Criação da janela principal.
 	GLFWwindow* janela = glfwCreateWindow(largura, altura, "The Earth", nullptr, nullptr);
+	assert(janela);
 
+	//Cadastra as callbacks do mouse no GLFW
+	glfwSetMouseButtonCallback(janela, ClickMouse);
+	glfwSetCursorPosCallback(janela, MovimentoMouse);
+
+
+
+	//Ativa o contexto criado na janela window
 	glfwMakeContextCurrent(janela);
+
+	//Habilita ou não o V-sync.
 	glfwSwapInterval(1);
 
 	// Inicializa o GLEW
