@@ -166,12 +166,27 @@ class FlyCamera
 {
 public:
 
+	void emFrente(float valor)
+	{
+		Localizacao += Direcao * valor * velocidade;
+	}
+
+	void aDireita(float valor)
+	{
+		vec3 Direita = normalize(cross(Direcao, Cima));
+		Localizacao += Direita * valor * velocidade;
+	}
+
 	mat4 GetViewProjection() const
 	{
 		mat4 View = lookAt(Localizacao, Localizacao + Direcao, Cima);
 		mat4 Projection = perspective(FieldOfView, AspectRatio, Near, Far);
 		return Projection * View;
 	}
+
+	//Parametros de interatividade
+	float velocidade = 20.0f;
+
 
 	//Definição da matriz de visão.
 	vec3 Localizacao{ 0.0f, 0.0f, 10.0f };
@@ -202,6 +217,7 @@ int main()
 	GLFWwindow* janela = glfwCreateWindow(largura, altura, "The Earth", nullptr, nullptr);
 
 	glfwMakeContextCurrent(janela);
+	glfwSwapInterval(1);
 
 	// Inicializa o GLEW
 	if (glewInit() != GLEW_OK) {
@@ -254,8 +270,19 @@ int main()
 	//Define a cor de fundo
 	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
+	//Guarda o tempo do frame anterior
+	double TempoAnterior = glfwGetTime();
+
 	// Loop de eventos da aplicação.
 	while (!glfwWindowShouldClose(janela)) {
+
+		double TempoAtual = glfwGetTime();
+		double Tempo_Delta = TempoAtual - TempoAnterior;
+
+		if (Tempo_Delta > 0.0)
+		{
+			TempoAnterior = TempoAtual;
+		}
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -302,6 +329,28 @@ int main()
 
 		// Envia para ser desenhado na tela o conteúdo do framebuffer.
 		glfwSwapBuffers(janela);
+
+		//Processa as entradas do teclado.
+		if (glfwGetKey(janela, GLFW_KEY_W) == GLFW_PRESS)
+		{
+			Camera.emFrente(1.0f * Tempo_Delta);
+		}
+
+		if (glfwGetKey(janela, GLFW_KEY_S) == GLFW_PRESS)
+		{
+			Camera.emFrente(-1.0f * Tempo_Delta);
+		}
+
+		if (glfwGetKey(janela, GLFW_KEY_A) == GLFW_PRESS)
+		{
+			Camera.aDireita(-1.0f * Tempo_Delta);
+		}
+
+		if (glfwGetKey(janela, GLFW_KEY_D) == GLFW_PRESS)
+		{
+			Camera.aDireita(1.0f * Tempo_Delta);
+		}
+
 	}
 
 	//Desaloca o Buffer de Vertices
