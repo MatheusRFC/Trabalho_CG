@@ -116,7 +116,7 @@ GLuint CarregaShaders(const char* VertexShaderFile, const char* FragmentShaderFi
 
 GLuint CarregaTextura(const char* Arquivo_Textura)
 {
-	cout << "Carregando textura" << Arquivo_Textura << endl;
+	cout << "Carregando textura: " << Arquivo_Textura << endl;
 
 	stbi_set_flip_vertically_on_load(true);
 
@@ -162,6 +162,33 @@ struct Vertex
 	vec2 UV;
 };
 
+class FlyCamera
+{
+public:
+
+	mat4 GetViewProjection() const
+	{
+		mat4 View = lookAt(Localizacao, Localizacao + Direcao, Cima);
+		mat4 Projection = perspective(FieldOfView, AspectRatio, Near, Far);
+		return Projection * View;
+	}
+
+	//Definição da matriz de visão.
+	vec3 Localizacao{ 0.0f, 0.0f, 10.0f };
+	vec3 Direcao{0.0f, 0.0f, -1.0f};
+	vec3 Cima{ 0.0f, 1.0f, 0.0f };
+
+	//Definição da matriz de projeção
+	float FieldOfView = radians(45.0f);
+	float AspectRatio = largura / altura;
+	float Near = 0.01f;
+	//OBS: Mudar o plano far para adicionar mais planetas.
+	float Far = 1000.0f;
+
+};
+
+FlyCamera Camera;
+
 int main()
 {
 	setlocale(LC_ALL, "Portuguese");
@@ -198,30 +225,19 @@ int main()
 	GLuint TextureId = CarregaTextura("texturas/earth_2k.jpg");
 
 	//Definição do triango usando coordenadas normalizadas
-	array <Vertex, 3> Triangulo = {
+	array <Vertex, 6> Quad = {
 		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 0.0f, 0.0f}, vec2{0.0f, 0.0f}},
 		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
-		Vertex{vec3{ 0.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.5f, 1.0f}}
+		Vertex{vec3{-1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.0f, 1.0f}},
+
+		Vertex{vec3{-1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.0f, 1.0f}},
+		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
+		Vertex{vec3{ 1.0f,  1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 1.0f}}
+
 	};
 
 	//Matriz Modelo
 	mat4 MatrizModelo = identity<mat4>();
-
-	//Matriz de Visão
-	vec3 Olho{ 0, 0, 10};
-	vec3 Centro{0, 0, 0};
-	vec3 Cima{ 0, 1, 0 };
-	mat4 MatrizVisao = lookAt(Olho, Centro, Cima);
-
-	//Matriz de Projeção
-	constexpr float FoV = radians(45.0f);
-	const float AspectRatio = largura / altura;
-	const float Near = 0.001f;
-	const float Far = 1000.0f;
-	mat4 MatrizProjecao = perspective(FoV, AspectRatio, Near, Far);
-
-	// Model View Projection - MVP
-	mat4 MVP = MatrizProjecao * MatrizVisao * MatrizModelo;
 
 	//Copiando os vértices do triangulo para a memória da GPU
 	GLuint Buffer_Vertices;
@@ -233,7 +249,7 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
 
 	//Copiar os dados para a memoria de video
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Triangulo), Triangulo.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Quad), Quad.data(), GL_STATIC_DRAW);
 
 	//Define a cor de fundo
 	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
@@ -245,6 +261,9 @@ int main()
 
 		//Ativa o programa de shader
 		glUseProgram(ProgramaId);
+
+		mat4  ViewProjection = Camera.GetViewProjection();
+		mat4 MVP = ViewProjection * MatrizModelo;
 
 		GLint ModelViewProjectionLock = glGetUniformLocation(ProgramaId, "ModelViewProjection");
 		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP));
@@ -267,7 +286,7 @@ int main()
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, Quad.size());
 
 		//Reverter o estado que foi criado
 		glBindBuffer(GL_ARRAY_BUFFER, 0);

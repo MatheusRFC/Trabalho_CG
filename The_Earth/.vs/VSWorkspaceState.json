@@ -1,10 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\out",
     "\\out\\build",
     "\\shaders"
   ],
-  "SelectedNode": "\\The_Earth.cpp",
+  "SelectedNode": "\\shaders\\triangulo_frag.glsl",
   "PreviewInSolutionExplorer": false
 }
