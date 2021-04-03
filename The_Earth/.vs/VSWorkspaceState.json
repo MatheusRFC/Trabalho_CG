@@ -1,7 +1,6 @@
 {
   "ExpandedNodes": [
     "",
-    "\\out\\build",
     "\\shaders"
   ],
   "SelectedNode": "\\shaders\\triangulo_frag.glsl",

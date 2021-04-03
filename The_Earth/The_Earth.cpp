@@ -29,7 +29,6 @@ string LerArquivo(const char* caminho)
 	return Conteudo_arquivo;
 }
 
-
 //Função que verifica o shader. PS: ShaderID já deve estar compilado antes de ser passado pra função.
 void verificaShader(GLuint ShaderId)
 {
@@ -165,6 +164,66 @@ struct Vertex
 	vec2 UV;
 };
 
+GLuint CarregaGeometria()
+{
+	//Definição do triango usando coordenadas normalizadas
+	array <Vertex, 6> Quad = {
+		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 0.0f, 0.0f}, vec2{0.0f, 0.0f}},
+		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
+		Vertex{vec3{ 1.0f,  1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 1.0f}},
+		Vertex{vec3{-1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.0f, 1.0f}}
+	};
+
+	//Define a lista de elementos que formam as listas de triangulos
+	array<ivec3, 2> indices = {
+		ivec3{0, 1, 3},
+		ivec3{3, 1, 2}
+	};
+
+	//Copiando os vértices do triangulo para a memória da GPU
+	GLuint Buffer_Vertices;
+
+	//Gera o identificador do buffer de vertices
+	glGenBuffers(1, &Buffer_Vertices);
+
+	//Falar para o OpenGL gerar o identificador do VBO
+	GLuint BufferElementos = 0;
+	glGenBuffers(1, &BufferElementos);
+
+	//Ativa o buffer de vertices, onde serão copiados os dados do triangulo.
+	glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
+
+	//Copiar os dados para a memoria de video
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Quad), Quad.data(), GL_STATIC_DRAW);
+
+	//Copia os dados do buffer de Elementos pra GPU
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferElementos);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), GL_STATIC_DRAW);
+
+	//Gera o Vertex Array Object (VAO)
+	GLuint VAO; 
+	glGenVertexArrays(1, &VAO);
+
+	//Habilita  o VAO
+	glBindVertexArray(VAO);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+
+	//informa o opengl que o Buffer de Vertices vai ser o ativo no momento.
+	glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferElementos);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
+
+	glBindVertexArray(0);
+
+	return VAO;
+}
+
 class FlyCamera
 {
 public:
@@ -278,8 +337,6 @@ int main()
 	glfwSetMouseButtonCallback(janela, ClickMouse);
 	glfwSetCursorPosCallback(janela, MovimentoMouse);
 
-
-
 	//Ativa o contexto criado na janela window
 	glfwMakeContextCurrent(janela);
 
@@ -307,38 +364,20 @@ int main()
 
 	GLuint TextureId = CarregaTextura("texturas/earth_2k.jpg");
 
-	//Definição do triango usando coordenadas normalizadas
-	array <Vertex, 6> Quad = {
-		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 0.0f, 0.0f}, vec2{0.0f, 0.0f}},
-		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
-		Vertex{vec3{-1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.0f, 1.0f}},
-
-		Vertex{vec3{-1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.0f, 1.0f}},
-		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
-		Vertex{vec3{ 1.0f,  1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 1.0f}}
-
-	};
+	GLuint QuadVAO = CarregaGeometria();
 
 	//Matriz Modelo
 	mat4 MatrizModelo = identity<mat4>();
-
-	//Copiando os vértices do triangulo para a memória da GPU
-	GLuint Buffer_Vertices;
-
-	//Gera o identificador do buffer de vertices
-	glGenBuffers(1, &Buffer_Vertices);
-
-	//Ativa o buffer de vertices, onde serão copiados os dados do triangulo.
-	glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
-
-	//Copiar os dados para a memoria de video
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Quad), Quad.data(), GL_STATIC_DRAW);
 
 	//Define a cor de fundo
 	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
 	//Guarda o tempo do frame anterior
 	double TempoAnterior = glfwGetTime();
+
+	//Habilita o backface culling
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
 	// Loop de eventos da aplicação.
 	while (!glfwWindowShouldClose(janela)) {
@@ -368,25 +407,14 @@ int main()
 		GLint TextureSamplerLock = glGetUniformLocation(ProgramaId, "amostraTextura");
 		glUniform1i(GL_TEXTURE_2D, TextureId);
 
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glEnableVertexAttribArray(2);
+		glBindVertexArray(QuadVAO);
 
-		//informa o opengl que o Buffer de Vertices vai ser o ativo no momento.
-		glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
+		//Diz para o OpenGL desenhar o triangulo com os dados armazenados no Buffer de Vertices.
+		glPointSize(10.0f);
+		glLineWidth(10.0f);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
-
-		glDrawArrays(GL_TRIANGLES, 0, Quad.size());
-
-		//Reverter o estado que foi criado
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
 		//Desabilita o programa ativo.
 		glUseProgram(0);
@@ -421,12 +449,10 @@ int main()
 	}
 
 	//Desaloca o Buffer de Vertices
-	glDeleteBuffers(1, &Buffer_Vertices);
+	glDeleteVertexArrays(1, &QuadVAO);
 
 	// Comando para o encerramento da biblioteca GLFW
 	glfwTerminate();
 
-
 	return 0;
-
 }
