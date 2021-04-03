@@ -180,6 +180,20 @@ public:
 		Localizacao += Direita * valor * velocidade;
 	}
 
+	void Olhar(float yaw, float pitch)
+	{
+		yaw *= sensilidade;
+		pitch *= sensilidade;
+
+		const vec3 Direita = normalize(cross(Direcao, Cima));
+
+		const mat4 RotacaoYaw = rotate(identity<mat4>(), radians(yaw), Cima);
+		const mat4 RotacaoPitch = rotate(identity<mat4>(), radians(pitch), Direita);
+
+		Cima = RotacaoPitch * vec4{ Cima, 0.0f };
+		Direcao = RotacaoYaw * RotacaoPitch * vec4{ Direcao, 0.0f };
+	}
+
 	mat4 GetViewProjection() const
 	{
 		mat4 View = lookAt(Localizacao, Localizacao + Direcao, Cima);
@@ -189,7 +203,7 @@ public:
 
 	//Parametros de interatividade
 	float velocidade = 20.0f;
-
+	float sensilidade = 0.1f;
 
 	//Definição da matriz de visão.
 	vec3 Localizacao{ 0.0f, 0.0f, 10.0f };
@@ -240,7 +254,8 @@ void MovimentoMouse(GLFWwindow* janela, double x, double y)
 		vec2 CursorAtual{ x, y };
 		vec2 Cursor_delta = CursorAtual - CursorAnterior;
 
-		cout << to_string(Cursor_delta) << endl;
+		//cout << to_string(Cursor_delta) << endl;
+		Camera.Olhar(Cursor_delta.x, Cursor_delta.y);
 
 		CursorAnterior = CursorAtual;
 	}
