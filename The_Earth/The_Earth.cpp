@@ -488,6 +488,7 @@ int main()
 	GLuint ProgramaId = CarregaShaders("shaders/triangulo_vert.glsl", "shaders/triangulo_frag.glsl");
 
 	GLuint TextureId = CarregaTextura("texturas/earth_2k.jpg");
+	GLuint CloudTextureId = CarregaTextura("texturas/earth_clouds_2k.jpg");
 
 	GLuint QuadVAO = CarregaGeometria();
 
@@ -541,6 +542,9 @@ int main()
 		mat4 ViewProjection = Camera.GetViewProjection();
 		mat4 MVP = ViewProjection * MatrizModelo;
 
+		GLint TimeLock = glGetUniformLocation(ProgramaId, "time");
+		glUniform1f(TimeLock, TempoAtual);
+
 		GLint ModelViewProjectionLock = glGetUniformLocation(ProgramaId, "ModelViewProjection");
 		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP));
 
@@ -550,8 +554,14 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, TextureId);
 
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, CloudTextureId);
+
 		GLint TextureSamplerLock = glGetUniformLocation(ProgramaId, "amostraTextura");
 		glUniform1i(TextureSamplerLock, 0);
+
+		GLint CloudTextureLock = glGetUniformLocation(ProgramaId, "CloudsTexture");
+		glUniform1i(CloudTextureLock, 1);
 
 		GLint LightDirectionLock = glGetUniformLocation(ProgramaId, "LightDirection");
 		glUniform3fv(LightDirectionLock, 1, value_ptr(Camera.GetView() * vec4(Luz.Direcao, 0.0f)));
