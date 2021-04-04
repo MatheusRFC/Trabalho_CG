@@ -8,6 +8,7 @@
 #include <glm/ext.hpp>
 #include <assert.h>
 #include <glm/gtx/string_cast.hpp>
+#include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -16,8 +17,8 @@
 using namespace std;
 using namespace glm;
 
-const int largura = 1280;
-const int altura = 720;
+int largura = 1280;
+int altura = 720;
 
 string LerArquivo(const char* caminho) 
 {
@@ -224,6 +225,101 @@ GLuint CarregaGeometria()
 	return VAO;
 }
 
+void GeraEsfera(GLuint resolucao, vector<Vertex>& Vertices, vector<ivec3>& indices)
+{
+	Vertices.clear();
+	indices.clear();
+
+	constexpr float Pi = pi<float>();
+	constexpr float DoisPi = two_pi<float>();
+
+	const float InverResolucao = 1.0f / static_cast<float>(resolucao - 1);
+
+	for (GLuint Uindex = 0; Uindex < resolucao; ++Uindex)
+	{
+		const float U = Uindex * InverResolucao;
+		const float Phi = mix(0.0f, DoisPi, U);
+
+		for (GLuint Vindex = 0; Vindex < resolucao; ++Vindex)
+		{
+			const float V = Vindex * InverResolucao;
+			const float Theta = mix(0.0f, Pi, V);
+
+			vec3 VertexPosition =
+			{
+				sin(Theta) * cos(Phi),
+				sin(Theta) * sin(Phi),
+				cos(Theta)
+			};
+			Vertex Vertex
+			{
+				VertexPosition,
+				vec3(1.0f, 1.0f, 1.0f),
+				vec2{1.0f - U, V }
+			};
+
+			Vertices.push_back(Vertex);
+		}
+	}
+
+	for (GLuint U = 0; U < resolucao - 1; ++U)
+	{
+		for (GLuint V = 0; V < resolucao - 1; ++V)
+		{
+			GLuint P0 = U + V * resolucao; 
+			GLuint P1 = (U + 1) + V * resolucao;
+			GLuint P2 = (U + 1) + (V + 1) * resolucao;
+			GLuint P3 = U + (V + 1) * resolucao;
+
+			indices.push_back(ivec3{ P0, P1, P3 });
+			indices.push_back(ivec3{ P3, P1, P2 });
+		}
+	}
+}
+
+GLuint CarregaEsfera(GLuint &NumVertices, GLuint& NumIndices)
+{
+	vector<Vertex> Vertices;
+	vector<ivec3> Triangulos;
+	GeraEsfera(100, Vertices, Triangulos);
+
+	NumVertices = Vertices.size();
+	NumIndices = Triangulos.size() * 3;
+
+	GLuint BufferVertices;
+	glGenBuffers(1, &BufferVertices);
+
+	//Ativa o buffer de vertices, onde serão copiados os dados do triangulo.
+	glBindBuffer(GL_ARRAY_BUFFER, BufferVertices);
+
+	//Copia os dados para a memoria de video
+	glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(Vertex), Vertices.data(), GL_STATIC_DRAW);
+
+	GLuint BufferElementos;
+	glGenBuffers(1, &BufferElementos);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferElementos);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, NumIndices * sizeof(GLuint), Triangulos.data(), GL_STATIC_DRAW);
+
+	GLuint VAO;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+
+	glBindBuffer(GL_ARRAY_BUFFER, BufferVertices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferElementos);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
+
+	glBindVertexArray(0);
+
+	return VAO;
+}
+
 class FlyCamera
 {
 public:
@@ -320,6 +416,15 @@ void MovimentoMouse(GLFWwindow* janela, double x, double y)
 	}
 }
 
+void Resize(GLFWwindow* janela, int novalargura, int novaaltura)
+{
+	largura = novalargura;
+	altura = novaaltura;
+
+	Camera.AspectRatio = static_cast<float>(largura) / altura;
+	glViewport(0, 0, largura, altura);
+}
+
 int main()
 {
 	setlocale(LC_ALL, "Portuguese");
@@ -331,11 +436,11 @@ int main()
 
 	// Criação da janela principal.
 	GLFWwindow* janela = glfwCreateWindow(largura, altura, "The Earth", nullptr, nullptr);
-	assert(janela);
 
 	//Cadastra as callbacks do mouse no GLFW
 	glfwSetMouseButtonCallback(janela, ClickMouse);
 	glfwSetCursorPosCallback(janela, MovimentoMouse);
+	glfwSetFramebufferSizeCallback(janela, Resize);
 
 	//Ativa o contexto criado na janela window
 	glfwMakeContextCurrent(janela);
@@ -360,14 +465,28 @@ int main()
 	cout << "Versão do OpenGL: " << glGetString(GL_VERSION) << "\n";
 	cout << "Versão do GLSL: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
 
+	Resize(janela, largura, altura);
+
 	GLuint ProgramaId = CarregaShaders("shaders/triangulo_vert.glsl", "shaders/triangulo_frag.glsl");
 
 	GLuint TextureId = CarregaTextura("texturas/earth_2k.jpg");
 
 	GLuint QuadVAO = CarregaGeometria();
 
+	GLuint NumVerticesEsfera = 0;
+	GLuint NumIndicesEsfera = 0;
+
+	GLuint VAOEsfera = CarregaEsfera(NumVerticesEsfera, NumIndicesEsfera);
+
+	cout << "NumVert: "<< NumVerticesEsfera << "Num indices: "<< NumIndicesEsfera<< endl;
+
 	//Matriz Modelo
-	mat4 MatrizModelo = identity<mat4>();
+	mat4 I = identity<mat4>();
+	mat4 MatrizModelo = rotate(I, radians(90.0f), vec3(1, 0, 0));
+	mat4 MatrizModelo2 = translate(I, vec3{5, 0, 0,});
+	mat4 MatrizModelo3 = translate(I, vec3{ 10, 0, 0, });
+	mat4 MatrizModelo4 = translate(I, vec3{ 15, 0, 0, });
+
 
 	//Define a cor de fundo
 	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
@@ -378,6 +497,10 @@ int main()
 	//Habilita o backface culling
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+
+	//Habilita o teste de profundidade
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
 	// Loop de eventos da aplicação.
 	while (!glfwWindowShouldClose(janela)) {
@@ -390,12 +513,12 @@ int main()
 			TempoAnterior = TempoAtual;
 		}
 
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//Ativa o programa de shader
 		glUseProgram(ProgramaId);
 
-		mat4  ViewProjection = Camera.GetViewProjection();
+		mat4 ViewProjection = Camera.GetViewProjection();
 		mat4 MVP = ViewProjection * MatrizModelo;
 
 		GLint ModelViewProjectionLock = glGetUniformLocation(ProgramaId, "ModelViewProjection");
@@ -407,14 +530,27 @@ int main()
 		GLint TextureSamplerLock = glGetUniformLocation(ProgramaId, "amostraTextura");
 		glUniform1i(GL_TEXTURE_2D, TextureId);
 
-		glBindVertexArray(QuadVAO);
+		//glBindVertexArray(QuadVAO);
+		glBindVertexArray(VAOEsfera);
 
 		//Diz para o OpenGL desenhar o triangulo com os dados armazenados no Buffer de Vertices.
 		glPointSize(10.0f);
 		glLineWidth(10.0f);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
+		//glDrawArrays(GL_POINTS, 0, NumVerticesEsfera);
+
+		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP * MatrizModelo2));
+		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
+
+		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP * MatrizModelo3));
+		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
+
+		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP * MatrizModelo4));
+		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
+
+		glBindVertexArray(0);
 
 		//Desabilita o programa ativo.
 		glUseProgram(0);
