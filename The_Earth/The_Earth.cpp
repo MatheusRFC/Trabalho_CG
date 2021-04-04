@@ -161,18 +161,25 @@ GLuint CarregaTextura(const char* Arquivo_Textura)
 struct Vertex
 {
 	vec3 Posicao;
+	vec3 Normal;
 	vec3 Cor;
 	vec2 UV;
+};
+
+struct LuzDirecional
+{
+	vec3 Direcao;
+	GLfloat Intensidade;
 };
 
 GLuint CarregaGeometria()
 {
 	//Definição do triango usando coordenadas normalizadas
 	array <Vertex, 6> Quad = {
-		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{1.0f, 0.0f, 0.0f}, vec2{0.0f, 0.0f}},
-		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
-		Vertex{vec3{ 1.0f,  1.0f, 0.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 1.0f}},
-		Vertex{vec3{-1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.0f, 1.0f}}
+		Vertex{vec3{-1.0f, -1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec3{1.0f, 0.0f, 0.0f}, vec2{0.0f, 0.0f}},
+		Vertex{vec3{ 1.0f, -1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 0.0f}},
+		Vertex{vec3{ 1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec3{0.0f, 1.0f, 0.0f}, vec2{1.0f, 1.0f}},
+		Vertex{vec3{-1.0f,  1.0f, 0.0f}, vec3{0.0f, 0.0f, 1.0f}, vec3{0.0f, 0.0f, 1.0f}, vec2{0.0f, 1.0f}}
 	};
 
 	//Define a lista de elementos que formam as listas de triangulos
@@ -211,14 +218,16 @@ GLuint CarregaGeometria()
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 
 	//informa o opengl que o Buffer de Vertices vai ser o ativo no momento.
 	glBindBuffer(GL_ARRAY_BUFFER, Buffer_Vertices);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferElementos);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Normal)));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
 
 	glBindVertexArray(0);
 
@@ -254,6 +263,7 @@ void GeraEsfera(GLuint resolucao, vector<Vertex>& Vertices, vector<ivec3>& indic
 			Vertex Vertex
 			{
 				VertexPosition,
+				normalize(VertexPosition),
 				vec3(1.0f, 1.0f, 1.0f),
 				vec2{1.0f - U, V }
 			};
@@ -307,13 +317,15 @@ GLuint CarregaEsfera(GLuint &NumVertices, GLuint& NumIndices)
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 
 	glBindBuffer(GL_ARRAY_BUFFER, BufferVertices);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferElementos);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Normal)));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Cor)));
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, UV)));
 
 	glBindVertexArray(0);
 
@@ -349,11 +361,16 @@ public:
 		Direcao = RotacaoYaw * RotacaoPitch * vec4{ Direcao, 0.0f };
 	}
 
+	mat4 GetView() const
+	{
+		return lookAt(Localizacao, Localizacao + Direcao, Cima);
+	}
+
 	mat4 GetViewProjection() const
 	{
 		mat4 View = lookAt(Localizacao, Localizacao + Direcao, Cima);
 		mat4 Projection = perspective(FieldOfView, AspectRatio, Near, Far);
-		return Projection * View;
+		return Projection * GetView();
 	}
 
 	//Parametros de interatividade
@@ -436,6 +453,7 @@ int main()
 
 	// Criação da janela principal.
 	GLFWwindow* janela = glfwCreateWindow(largura, altura, "The Earth", nullptr, nullptr);
+	assert(janela);
 
 	//Cadastra as callbacks do mouse no GLFW
 	glfwSetMouseButtonCallback(janela, ClickMouse);
@@ -483,13 +501,9 @@ int main()
 	//Matriz Modelo
 	mat4 I = identity<mat4>();
 	mat4 MatrizModelo = rotate(I, radians(90.0f), vec3(1, 0, 0));
-	mat4 MatrizModelo2 = translate(I, vec3{5, 0, 0,});
-	mat4 MatrizModelo3 = translate(I, vec3{ 10, 0, 0, });
-	mat4 MatrizModelo4 = translate(I, vec3{ 15, 0, 0, });
-
 
 	//Define a cor de fundo
-	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	//Guarda o tempo do frame anterior
 	double TempoAnterior = glfwGetTime();
@@ -501,6 +515,11 @@ int main()
 	//Habilita o teste de profundidade
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+
+	//Cria uma fonte de luz direcional
+	LuzDirecional Luz;
+	Luz.Direcao = vec3{ 0.0f, 0.0f, -1.0f };
+	Luz.Intensidade = 1;
 
 	// Loop de eventos da aplicação.
 	while (!glfwWindowShouldClose(janela)) {
@@ -518,17 +537,27 @@ int main()
 		//Ativa o programa de shader
 		glUseProgram(ProgramaId);
 
+		mat4 MatrizNormal = inverse(transpose(Camera.GetView() * MatrizModelo));
 		mat4 ViewProjection = Camera.GetViewProjection();
 		mat4 MVP = ViewProjection * MatrizModelo;
 
 		GLint ModelViewProjectionLock = glGetUniformLocation(ProgramaId, "ModelViewProjection");
 		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP));
 
+		GLint NormalMatrixLock = glGetUniformLocation(ProgramaId, "NormalMatrix");
+		glUniformMatrix4fv(NormalMatrixLock, 1, GL_FALSE, value_ptr(MatrizNormal));
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, TextureId);
 
 		GLint TextureSamplerLock = glGetUniformLocation(ProgramaId, "amostraTextura");
-		glUniform1i(GL_TEXTURE_2D, TextureId);
+		glUniform1i(TextureSamplerLock, 0);
+
+		GLint LightDirectionLock = glGetUniformLocation(ProgramaId, "LightDirection");
+		glUniform3fv(LightDirectionLock, 1, value_ptr(Camera.GetView() * vec4(Luz.Direcao, 0.0f)));
+
+		GLint LightIntensityLock = glGetUniformLocation(ProgramaId, "LightIntensity");
+		glUniform1f(LightIntensityLock, Luz.Intensidade);
 
 		//glBindVertexArray(QuadVAO);
 		glBindVertexArray(VAOEsfera);
@@ -540,15 +569,6 @@ int main()
 
 		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
 		//glDrawArrays(GL_POINTS, 0, NumVerticesEsfera);
-
-		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP * MatrizModelo2));
-		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
-
-		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP * MatrizModelo3));
-		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
-
-		glUniformMatrix4fv(ModelViewProjectionLock, 1, GL_FALSE, value_ptr(MVP * MatrizModelo4));
-		glDrawElements(GL_TRIANGLES, NumIndicesEsfera, GL_UNSIGNED_INT, nullptr);
 
 		glBindVertexArray(0);
 
